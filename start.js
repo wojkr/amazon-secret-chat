@@ -3,7 +3,7 @@ var MessageColor = "#700";
 var isLogged = false;
 var lastPostDate;
 // Constants for initial and inactivity timeout settings
-const InitialTimeoutMinutes = 0.15;
+const InitialTimeoutMinutes = 15;
 const InactivityTimeoutMinutes = 2;
 const DB = [];
 
