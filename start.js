@@ -1,11 +1,12 @@
-var MessageColor = "#700";
 // Variables to track user activity and state
+var URL = "http://localhost:5065";
+var DB_cloud = [];
+var MessageColor = "#700";
+var MessageColor2 = "#009";
 var isLogged = false;
-var lastPostDate;
 // Constants for initial and inactivity timeout settings
 const InitialTimeoutMinutes = 15;
 const InactivityTimeoutMinutes = 2;
-const DB = [];
 
 // Password for authentication
 const Password = "lipstick";
@@ -34,7 +35,7 @@ Btn.addEventListener("click", (click) => {
     searchString.trim().toLowerCase() == Password ||
     searchString == Password2
   ) {
-    if (searchString != Password2) MessageColor = "#009";
+    if (searchString != Password2) MessageColor = MessageColor2;
     isLogged = true;
     setNewTimeout(); // Reset the inactivity timeout
     SearchInput.value = ""; // Clear the input field
@@ -69,14 +70,13 @@ function setNewTimeout(time = InactivityTimeoutMinutes) {
   }, time * 60 * 1000); // Convert minutes to milliseconds
 }
 
-function GoToChatPage() {
+async function GoToChatPage() {
   const chatPage = document.getElementById("chat-page");
   const imgs = document.getElementsByClassName("btn-aref");
   const btnSend = document.getElementById("f2");
   const MessageInput = document.getElementById("e2");
   var messageString;
-  DisplayAll();
-  setInterval(() => DisplayAll(lastPostDate), 2000);
+  setInterval(() => DisplayAll(), 2000);
 
   MessageInput.addEventListener("input", (event) => {
     messageString = event.target.value;
@@ -89,86 +89,86 @@ function GoToChatPage() {
   }
   btnSend.addEventListener("click", () => {
     messageString = messageString.trim();
-    if (messageString) AddMessage(messageString);
+    if (messageString) AddMessage(messageString, MessageColor);
     messageString = "";
     MessageInput.value = "";
   });
-
-  function AddMessage(string) {
-    const lastMessageDate = lastPostDate ?? 1695923848325;
-    // const lastMessageDate = DB.at(-1).date ?? 1695923848325;
-    AddMessageToDB(string, MessageColor);
-    DisplayAll(lastMessageDate);
-  }
-  function DisplayAll(lastMessageDate = false) {
-    GetMessages().forEach((element) => {
-      if (!lastMessageDate || element.date > lastMessageDate) {
-        DisplayMessage(element.message, element.color, element.date);
-      }
-    });
-  }
-  function DisplayMessage(
-    string,
-    color = MessageColor,
-    date = new Date(Date.now())
-  ) {
-    lastPostDate = date;
-    const div = document.getElementById("chat-container");
-    const newDiv = document.createElement("p");
-
-    date = new Date(date).toLocaleString("en-GB", { timeZone: "UTC" });
-    console.log(date);
-    if (color == "#009") {
-      newDiv.style.textAlign = "end";
-      newDiv.style.marginLeft = "20%";
-    } else {
-      newDiv.style.marginRight = "20%";
+}
+async function DisplayAll() {
+  await GetMessages().then((messages) => {
+    if (DB_cloud.length != messages.length) {
+      let newMessages = findMissingObjects(messages, DB_cloud);
+      newMessages.forEach((m) => DisplayMessage(m.text, m.color, m.time));
     }
-    newDiv.style.background = `${color}1`;
-    newDiv.style.color = color;
-    newDiv.classList.add("message");
-    newDiv.innerText = string;
-    div.appendChild(newDiv);
+    DB_cloud = messages;
+  });
+}
+function DisplayMessage(
+  text,
+  color = MessageColor,
+  time = new Date(Date.now())
+) {
+  lastPostDate = time;
+  const div = document.getElementById("chat-container");
+  const newDiv = document.createElement("p");
 
-    const span = document.createElement("span");
-    span.innerText = "\n" + date;
-    span.style.fontSize = "0.6rem";
-    newDiv.appendChild(span);
-    div.scrollTop = div.scrollHeight;
+  time = new Date(time).toLocaleString("en-GB", { timeZone: "UTC" });
+  if (color == MessageColor2) {
+    newDiv.style.textAlign = "end";
+    newDiv.style.marginLeft = "20%";
+  } else {
+    newDiv.style.marginRight = "20%";
   }
+  newDiv.style.background = `${color}1`;
+  newDiv.style.color = color;
+  newDiv.classList.add("message");
+  newDiv.innerText = text;
+  div.appendChild(newDiv);
+
+  const span = document.createElement("span");
+  span.innerText = "\n" + time;
+  span.style.fontSize = "0.6rem";
+  newDiv.appendChild(span);
+  div.scrollTop = div.scrollHeight;
 }
 
-function GetMessages() {
-  return DB_cloud;
+async function GetMessages() {
+  var res = [];
+  await fetch(URL)
+    .then((response) => response.json())
+    .then((json) => {
+      res = json;
+    })
+    .catch((error) => console.log("Authorization failed : " + error.message));
+
+  return res;
 }
-function AddMessageToDB(message, color) {
-  DB_cloud.push({ color, message, date: Date.now() });
+async function AddMessage(message, color) {
+  const messageObject = { color, text: message, time: Date.now() };
+  await fetch(URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(messageObject),
+  })
+    .then((response) => response.json())
+    .then((json) => {
+      res = json;
+    })
+    .catch((error) => console.log("Authorization failed : " + error.message));
 }
 
-var DB_cloud = [
-  {
-    color: "#009",
-    message: "0000",
-    date: 1695923848335,
-  },
-  {
-    color: "#009",
-    message: "1111",
-    date: 1695923870539,
-  },
-  {
-    color: "#700",
-    message: "222",
-    date: 1695923872330,
-  },
-  {
-    color: "#009",
-    message: "3333",
-    date: 1695923873357,
-  },
-  {
-    color: "#700",
-    message: "4444",
-    date: 1695923874512,
-  },
-];
+function findMissingObjects(arr1, arr2) {
+  // Extract the 'time' values from both arrays into sets
+  const timeSet1 = new Set(arr1.map((obj) => obj.time));
+  const timeSet2 = new Set(arr2.map((obj) => obj.time));
+
+  // Find the 'time' values that are missing in arr2 compared to arr1
+  const missingTimes = [...timeSet1].filter((time) => !timeSet2.has(time));
+
+  // Create an array of objects with the missing 'time' values
+  const missingObjects = arr1.filter((obj) => missingTimes.includes(obj.time));
+
+  return missingObjects;
+}
