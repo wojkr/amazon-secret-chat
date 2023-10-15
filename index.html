@@ -198,7 +198,7 @@
           <div id="h">SORRY</div>
           <div id="i">we couldn't find that page</div>
           <div id="j">
-            <button id="btn-j">Try</button> searching or go to
+            Try <button id="btn-j">searching</button> or go to
             <a href="https://www.amazon.co.uk/">Amazon's home page</a>.
           </div>
         </div>
@@ -244,12 +244,14 @@
           method="GET"
           role="search" -->
           <div id="cb">
-            <input id="e2" name="field-keywords" placeholder="Search" />
-            <button type="button" id="f2">
-              <img
-                src="https://m.media-amazon.com/images/G/02/error/nav-sprite-search-icon-FDTKS.png"
-              />
-            </button>
+            <form onsubmit="return false">
+              <input id="e2" name="field-keywords" placeholder="Search" />
+              <button type="submit" id="f2">
+                <img
+                  src="https://m.media-amazon.com/images/G/02/error/nav-sprite-search-icon-FDTKS.png"
+                />
+              </button>
+            </form>
           </div>
         </div>
       </div>
